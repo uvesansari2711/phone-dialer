@@ -1,8 +1,8 @@
 import { Call, type CallDocument } from '../models/Call.js';
 import { logger } from '../config/logger.js';
-import { config } from '../config/env.js';
 import { NotFoundError } from '../utils/errors.js';
 import { hangupCall, mapTwilioStatus } from './twilioService.js';
+import { resolveCallerIdFromWebhook } from './phoneNumberService.js';
 import type { CallStatus } from '../types/index.js';
 
 export function serializeCall(call: CallDocument) {
@@ -68,6 +68,7 @@ export async function endCall(callSid: string): Promise<CallDocument> {
 export async function linkCallSidToPending(
   callSid: string,
   to: string,
+  from?: string,
 ): Promise<CallDocument | null> {
   const pending = await Call.findOneAndUpdate(
     { to, status: 'pending', twilioCallSid: { $exists: false } },
@@ -83,9 +84,11 @@ export async function linkCallSidToPending(
   const existing = await Call.findOne({ twilioCallSid: callSid });
   if (existing) return existing;
 
+  const callerId = await resolveCallerIdFromWebhook(from);
+
   const created = await Call.create({
     to,
-    from: config.twilio.phoneNumber,
+    from: callerId,
     twilioCallSid: callSid,
     direction: 'outbound',
     status: 'initiated',
@@ -102,20 +105,21 @@ export async function updateCallFromWebhook(params: {
   To?: string;
   From?: string;
 }): Promise<CallDocument> {
-  const { CallSid, CallStatus, CallDuration, To } = params;
+  const { CallSid, CallStatus, CallDuration, To, From } = params;
   const status = mapTwilioStatus(CallStatus) as CallStatus;
 
   let call = await Call.findOne({ twilioCallSid: CallSid });
 
   if (!call && To) {
-    const linked = await linkCallSidToPending(CallSid, To);
+    const linked = await linkCallSidToPending(CallSid, To, From);
     if (linked) call = linked;
   }
 
   if (!call) {
+    const callerId = await resolveCallerIdFromWebhook(From);
     call = await Call.create({
       to: To || 'unknown',
-      from: config.twilio.phoneNumber,
+      from: callerId,
       twilioCallSid: CallSid,
       direction: 'outbound',
       status,

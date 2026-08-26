@@ -1,4 +1,3 @@
-import { config } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { normalizeToE164 } from '../utils/phone.js';
 import { ValidationError } from '../utils/errors.js';
@@ -11,13 +10,14 @@ export interface OutgoingPhoneNumber {
 }
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
+const TEST_PHONE_NUMBER = '+14155552671';
 
 let cachedNumbers: { numbers: OutgoingPhoneNumber[]; fetchedAt: number } | null = null;
 
 function testPhoneNumbers(): OutgoingPhoneNumber[] {
   return [
     {
-      phoneNumber: config.twilio.phoneNumber,
+      phoneNumber: TEST_PHONE_NUMBER,
       friendlyName: 'Test Number',
       sid: 'PNtest',
     },
@@ -52,20 +52,17 @@ export async function getOutgoingPhoneNumbers(
       sid: entry.sid,
     }));
 
-  if (
-    config.twilio.phoneNumber &&
-    !numbers.some((n) => n.phoneNumber === config.twilio.phoneNumber)
-  ) {
-    numbers.unshift({
-      phoneNumber: config.twilio.phoneNumber,
-      friendlyName: config.twilio.phoneNumber,
-      sid: 'env-default',
-    });
-  }
-
   cachedNumbers = { numbers, fetchedAt: Date.now() };
   logger.info({ count: numbers.length }, 'Fetched outgoing phone numbers from Twilio');
   return numbers;
+}
+
+export async function getDefaultCallerId(): Promise<string> {
+  const numbers = await getOutgoingPhoneNumbers();
+  if (numbers.length === 0) {
+    throw new ValidationError('No outbound phone numbers available on this account.');
+  }
+  return numbers[0].phoneNumber;
 }
 
 export async function resolveCallerId(from?: string): Promise<string> {
@@ -87,13 +84,17 @@ export async function resolveCallerId(from?: string): Promise<string> {
     return normalized;
   }
 
-  if (allowed.has(config.twilio.phoneNumber)) {
-    return config.twilio.phoneNumber;
+  return getDefaultCallerId();
+}
+
+export async function resolveCallerIdFromWebhook(from?: string): Promise<string> {
+  if (from && !from.startsWith('client:')) {
+    try {
+      return await resolveCallerId(from);
+    } catch {
+      // Fall back to default when webhook From is not an owned number.
+    }
   }
 
-  if (numbers.length > 0) {
-    return numbers[0].phoneNumber;
-  }
-
-  return config.twilio.phoneNumber;
+  return getDefaultCallerId();
 }

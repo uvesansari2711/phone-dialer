@@ -9,7 +9,6 @@ function requireEnv(name: string): string {
       const testDefaults: Record<string, string> = {
         TWILIO_ACCOUNT_SID: 'ACtestaccountsid1234567890abcdef',
         TWILIO_AUTH_TOKEN: 'test_auth_token',
-        TWILIO_PHONE_NUMBER: '+15555550100',
         TWILIO_API_KEY_SID: 'SKtestapikeysid1234567890abcdef',
         TWILIO_API_KEY_SECRET: 'test_api_key_secret',
         TWILIO_TWIML_APP_SID: 'APtesttwimlapp1234567890abcdef',
@@ -29,7 +28,6 @@ export const config = {
   twilio: {
     accountSid: requireEnv('TWILIO_ACCOUNT_SID'),
     authToken: requireEnv('TWILIO_AUTH_TOKEN'),
-    phoneNumber: requireEnv('TWILIO_PHONE_NUMBER'),
     apiKeySid: requireEnv('TWILIO_API_KEY_SID'),
     apiKeySecret: requireEnv('TWILIO_API_KEY_SECRET'),
     twimlAppSid: requireEnv('TWILIO_TWIML_APP_SID'),
