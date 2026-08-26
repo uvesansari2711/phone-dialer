@@ -7,6 +7,7 @@ import {
   serializeCall,
   updateCallSidForRecord,
 } from '../services/callService.js';
+import { resolveCallerId } from '../services/phoneNumberService.js';
 import { normalizeToE164 } from '../utils/phone.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { ValidationError } from '../utils/errors.js';
@@ -15,10 +16,14 @@ import { getParam } from '../utils/params.js';
 import { logger } from '../config/logger.js';
 
 export const createCall = asyncHandler(async (req: Request, res: Response) => {
-  const { to } = req.body as { to?: string };
+  const { to, from } = req.body as { to?: string; from?: string };
 
   if (!to || typeof to !== 'string') {
     throw new ValidationError('Please enter a valid phone number.');
+  }
+
+  if (from !== undefined && typeof from !== 'string') {
+    throw new ValidationError('Please select a valid caller ID.');
   }
 
   let normalized: string;
@@ -31,11 +36,14 @@ export const createCall = asyncHandler(async (req: Request, res: Response) => {
     throw new ValidationError('Please enter a valid phone number.');
   }
 
+  const callerId = await resolveCallerId(from);
+
   try {
-    const call = await createPendingCall(normalized);
+    const call = await createPendingCall(normalized, callerId);
     res.status(201).json({
       callId: call._id.toString(),
       to: normalized,
+      from: callerId,
     });
   } catch (err) {
     logger.error({ err }, 'Failed to create call record');

@@ -85,9 +85,14 @@ export function useCall({ onHistoryRefresh }: UseCallOptions = {}) {
   );
 
   const startCall = useCallback(
-    async (to: string) => {
+    async (to: string, from: string) => {
       if (!isReady) {
         setError('Phone system is not ready. Please wait.');
+        return;
+      }
+
+      if (!from) {
+        setError('Please select a caller ID.');
         return;
       }
 
@@ -101,10 +106,10 @@ export function useCall({ onHistoryRefresh }: UseCallOptions = {}) {
       resetTimer();
 
       try {
-        const { callId } = await api.createCall(to);
+        const { callId } = await api.createCall(to, from);
         setCurrentCallId(callId);
 
-        const call = await connect(to);
+        const call = await connect(to, from);
         setupCallListeners(call, callId);
 
         const status = call.status();

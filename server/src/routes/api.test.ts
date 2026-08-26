@@ -27,6 +27,15 @@ describe('POST /api/calls', () => {
 
     expect(res.body.error).toBeDefined();
   });
+
+  it('rejects invalid caller ID', async () => {
+    const res = await request(app)
+      .post('/api/calls')
+      .send({ to: '+919512168389', from: '+19998887777' })
+      .expect(400);
+
+    expect(res.body.error).toContain('caller ID');
+  });
 });
 
 describe('GET /api/health', () => {

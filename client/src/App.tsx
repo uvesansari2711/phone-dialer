@@ -14,8 +14,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-dvh bg-dialer-app px-3 py-4 sm:py-6">
-      <div className="mx-auto flex min-h-[calc(100dvh-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-dialer-border bg-dialer-card shadow-card sm:min-h-[calc(100dvh-3rem)]">
+    <div className="flex h-dvh overflow-hidden bg-dialer-app px-2 py-2 sm:px-3 sm:py-3">
+      <div className="mx-auto flex h-full w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-dialer-border bg-dialer-card shadow-card">
         {view === 'dialer' ? (
           <Dialer
             onViewAll={() => setView('history')}

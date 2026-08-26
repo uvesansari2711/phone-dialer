@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { buildVoiceTwiml } from '../services/twilioService.js';
+import { resolveCallerId } from '../services/phoneNumberService.js';
 import { normalizeToE164 } from '../utils/phone.js';
 import { updateCallFromWebhook } from '../services/callService.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
@@ -8,6 +9,7 @@ import { logger } from '../config/logger.js';
 
 export const handleVoice = asyncHandler(async (req: Request, res: Response) => {
   const to = req.body.To as string | undefined;
+  const callerIdParam = req.body.CallerId as string | undefined;
 
   if (!to) {
     throw new ValidationError('Missing destination number');
@@ -20,9 +22,11 @@ export const handleVoice = asyncHandler(async (req: Request, res: Response) => {
     throw new ValidationError('Invalid destination number');
   }
 
-  logger.info({ to: normalized }, 'Serving TwiML for outbound call');
+  const callerId = await resolveCallerId(callerIdParam);
 
-  const twiml = buildVoiceTwiml(normalized);
+  logger.info({ to: normalized, callerId }, 'Serving TwiML for outbound call');
+
+  const twiml = buildVoiceTwiml(normalized, callerId);
   res.type('text/xml');
   res.send(twiml);
 });

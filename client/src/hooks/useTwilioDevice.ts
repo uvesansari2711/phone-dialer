@@ -59,14 +59,14 @@ export function useTwilioDevice() {
   }, [initDevice]);
 
   const connect = useCallback(
-    async (to: string): Promise<Call> => {
+    async (to: string, callerId: string): Promise<Call> => {
       const device = deviceRef.current;
       if (!device) {
         throw new Error('Device not ready');
       }
 
       const call = await device.connect({
-        params: { To: to },
+        params: { To: to, CallerId: callerId },
       });
 
       activeCallRef.current = call;

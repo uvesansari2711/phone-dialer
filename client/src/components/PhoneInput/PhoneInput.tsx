@@ -38,7 +38,7 @@ export function PhoneInput({ value, onChange, disabled = false }: PhoneInputProp
         onChange={handleChange}
         onPaste={handlePaste}
         disabled={disabled}
-        className="w-full bg-transparent py-4 text-center text-3xl font-light tracking-wide text-dialer-text placeholder:text-dialer-textMuted focus:outline-none disabled:opacity-50"
+        className="w-full bg-transparent py-2.5 text-center text-[1.75rem] font-light tracking-wide text-dialer-text placeholder:text-dialer-textMuted focus:outline-none disabled:opacity-50"
       />
     </div>
   );

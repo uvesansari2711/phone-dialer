@@ -2,6 +2,7 @@ import type {
   ApiError,
   CallRecord,
   CreateCallResponse,
+  PhoneNumbersResponse,
   TokenResponse,
 } from '../types';
 
@@ -58,10 +59,12 @@ export const api = {
 
   getToken: () => request<TokenResponse>('/api/twilio/token'),
 
-  createCall: (to: string) =>
+  getPhoneNumbers: () => request<PhoneNumbersResponse>('/api/twilio/phone-numbers'),
+
+  createCall: (to: string, from: string) =>
     request<CreateCallResponse>('/api/calls', {
       method: 'POST',
-      body: JSON.stringify({ to }),
+      body: JSON.stringify({ to, from }),
     }),
 
   linkCallSid: (callId: string, callSid: string) =>

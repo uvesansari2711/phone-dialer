@@ -11,7 +11,7 @@ export function CallButton({ onClick, disabled = false, loading = false }: CallB
       onClick={onClick}
       disabled={disabled || loading}
       aria-label={loading ? 'Calling' : 'Call'}
-      className="flex h-16 w-16 items-center justify-center rounded-full bg-dialer-accent text-white shadow-md transition-all hover:bg-dialer-accentDark active:scale-95 disabled:cursor-not-allowed disabled:bg-dialer-key disabled:text-dialer-textMuted disabled:shadow-none"
+      className="flex h-14 w-14 items-center justify-center rounded-full bg-dialer-accent text-white shadow-md transition-all hover:bg-dialer-accentDark active:scale-95 disabled:cursor-not-allowed disabled:bg-dialer-key disabled:text-dialer-textMuted disabled:shadow-none"
     >
       {loading ? (
         <span className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />

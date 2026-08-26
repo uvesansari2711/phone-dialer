@@ -7,7 +7,7 @@ interface DialPadProps {
 
 export function DialPad({ onKeyPress, disabled = false }: DialPadProps) {
   return (
-    <div className="grid grid-cols-3 gap-3 px-2" role="group" aria-label="Phone keypad">
+    <div className="grid grid-cols-3 gap-2 px-2" role="group" aria-label="Phone keypad">
       {KEYPAD_KEYS.map(({ digit, letters }) => (
         <button
           key={digit}
@@ -15,11 +15,11 @@ export function DialPad({ onKeyPress, disabled = false }: DialPadProps) {
           disabled={disabled}
           onClick={() => onKeyPress(digit)}
           aria-label={`Key ${digit}${letters ? `, ${letters}` : ''}`}
-          className="flex min-h-[72px] flex-col items-center justify-center rounded-full bg-dialer-key text-dialer-text transition-colors hover:bg-dialer-keyHover active:bg-dialer-keyHover disabled:opacity-50"
+          className="flex aspect-square max-h-[60px] w-full flex-col items-center justify-center rounded-full bg-dialer-key text-dialer-text transition-colors hover:bg-dialer-keyHover active:bg-dialer-keyHover disabled:opacity-50"
         >
-          <span className="text-3xl font-light leading-none">{digit}</span>
+          <span className="text-[1.65rem] font-light leading-none">{digit}</span>
           {letters && (
-            <span className="mt-1 text-[10px] font-medium tracking-widest text-dialer-textSecondary">
+            <span className="mt-0.5 text-[10px] font-medium tracking-widest text-dialer-textSecondary">
               {letters}
             </span>
           )}

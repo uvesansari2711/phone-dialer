@@ -21,15 +21,15 @@ export function serializeCall(call: CallDocument) {
   };
 }
 
-export async function createPendingCall(to: string): Promise<CallDocument> {
+export async function createPendingCall(to: string, from: string): Promise<CallDocument> {
   const call = await Call.create({
     to,
-    from: config.twilio.phoneNumber,
+    from,
     direction: 'outbound',
     status: 'pending',
   });
 
-  logger.info({ callId: call._id.toString(), to }, 'Created pending call record');
+  logger.info({ callId: call._id.toString(), to, from }, 'Created pending call record');
   return call;
 }
 

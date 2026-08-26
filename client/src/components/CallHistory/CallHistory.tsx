@@ -21,11 +21,11 @@ export function CallHistory({
   compact = false,
 }: CallHistoryProps) {
   const displayedCalls = limit != null ? calls.slice(0, limit) : calls;
-  const paddingClass = compact ? 'px-4 py-2' : 'px-4 py-6';
+  const paddingClass = compact ? 'px-4 py-1.5' : 'px-4 py-6';
 
   const header = (
-    <div className="mb-1 flex items-center justify-between">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-dialer-textSecondary">
+    <div className="mb-0.5 flex items-center justify-between">
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-dialer-textSecondary">
         {title}
       </h2>
       {onViewAll && calls.length > 0 && (

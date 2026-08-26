@@ -35,6 +35,18 @@ export interface CallRecord {
 export interface CreateCallResponse {
   callId: string;
   to: string;
+  from: string;
+}
+
+export interface OutgoingPhoneNumber {
+  phoneNumber: string;
+  friendlyName: string;
+  sid: string;
+}
+
+export interface PhoneNumbersResponse {
+  numbers: OutgoingPhoneNumber[];
+  default: string;
 }
 
 export interface TokenResponse {

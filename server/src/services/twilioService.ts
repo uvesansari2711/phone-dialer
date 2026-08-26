@@ -61,10 +61,10 @@ export function validateTwilioRequest(
   return twilio.validateRequest(config.twilio.authToken, signature, url, params);
 }
 
-export function buildVoiceTwiml(to: string): string {
+export function buildVoiceTwiml(to: string, callerId: string): string {
   const response = new twilio.twiml.VoiceResponse();
   const dial = response.dial({
-    callerId: config.twilio.phoneNumber,
+    callerId,
     answerOnBridge: true,
   });
   dial.number(
