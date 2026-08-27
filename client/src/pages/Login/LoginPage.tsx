@@ -73,7 +73,7 @@ export function LoginPage() {
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="admin@dialer.com"
+                placeholder="Enter your email"
                 className="w-full rounded-2xl border border-dialer-border bg-dialer-key px-4 py-3 text-dialer-text placeholder:text-dialer-textMuted focus:border-dialer-accent focus:outline-none focus:ring-2 focus:ring-dialer-accent/20"
               />
             </div>
