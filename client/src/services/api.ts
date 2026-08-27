@@ -5,8 +5,18 @@ import type {
   PhoneNumbersResponse,
   TokenResponse,
 } from '../types';
+import { getAuthToken, notifyAuthLogout } from '../utils/authStorage';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
+
+export interface LoginResponse {
+  token: string;
+  email: string;
+}
+
+export interface MeResponse {
+  email: string;
+}
 
 class ApiClientError extends Error {
   status: number;
@@ -18,6 +28,11 @@ class ApiClientError extends Error {
   }
 }
 
+function authHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
 
@@ -26,6 +41,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
         ...options.headers,
       },
     });
@@ -34,6 +50,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       'Network error. Please check your connection and try again.',
       0,
     );
+  }
+
+  if (response.status === 401 && path !== '/api/auth/login') {
+    notifyAuthLogout();
   }
 
   if (!response.ok) {
@@ -55,6 +75,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  login: (email: string, password: string) =>
+    request<LoginResponse>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+
+  getMe: () => request<MeResponse>('/api/auth/me'),
+
   getHealth: () => request<{ status: string }>('/api/health'),
 
   getToken: () => request<TokenResponse>('/api/twilio/token'),
