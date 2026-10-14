@@ -53,6 +53,8 @@ export const config = {
   },
   voiceWebhookUrl: `${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/api/twilio/voice`,
   statusWebhookUrl: `${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/api/twilio/status`,
+  smsWebhookUrl: `${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/api/twilio/sms`,
+  smsStatusWebhookUrl: `${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/api/twilio/sms-status`,
 } as const;
 
 export type Config = typeof config;

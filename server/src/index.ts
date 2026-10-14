@@ -23,6 +23,8 @@ async function start() {
     logger.info({ port: config.port }, 'Server started');
     logger.info({ voiceUrl: config.voiceWebhookUrl }, 'Voice webhook URL');
     logger.info({ statusUrl: config.statusWebhookUrl }, 'Status webhook URL');
+    logger.info({ smsUrl: config.smsWebhookUrl }, 'SMS inbound webhook URL');
+    logger.info({ smsStatusUrl: config.smsStatusWebhookUrl }, 'SMS status webhook URL');
   });
 }
 

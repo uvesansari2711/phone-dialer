@@ -10,8 +10,9 @@ export const getToken = asyncHandler(async (_req: Request, res: Response) => {
 
 export const getPhoneNumbers = asyncHandler(async (_req: Request, res: Response) => {
   const numbers = await getOutgoingPhoneNumbers();
+  const defaultVoice = numbers.find((n) => n.capabilities.voice)?.phoneNumber ?? '';
   res.json({
     numbers,
-    default: numbers[0]?.phoneNumber ?? '',
+    default: defaultVoice,
   });
 });

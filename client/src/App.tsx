@@ -1,17 +1,30 @@
 import { useState } from 'react';
 import { Dialer } from './pages/Dialer';
 import { CallHistoryPage } from './pages/CallHistory';
+import { Conversation } from './pages/Conversation';
+import { ConversationsPage } from './pages/Conversations';
 import { LoginPage } from './pages/Login';
 import { useAuth } from './hooks/useAuth';
 
-type View = 'dialer' | 'history';
+type View = 'dialer' | 'history' | 'conversation' | 'conversations';
 
 function DialerApp() {
   const [view, setView] = useState<View>('dialer');
   const [redialNumber, setRedialNumber] = useState<string | undefined>();
+  const [smsNumber, setSmsNumber] = useState<string | undefined>();
   const { logout, email } = useAuth();
 
   const handleHistorySelect = (number: string) => {
+    setRedialNumber(number);
+    setView('dialer');
+  };
+
+  const handleOpenSms = (number: string) => {
+    setSmsNumber(number);
+    setView('conversation');
+  };
+
+  const handleCallFromThread = (number: string) => {
     setRedialNumber(number);
     setView('dialer');
   };
@@ -29,16 +42,26 @@ function DialerApp() {
           Sign out
         </button>
 
-        {view === 'dialer' ? (
-          <Dialer
-            onViewAll={() => setView('history')}
-            redialNumber={redialNumber}
-            onRedialConsumed={() => setRedialNumber(undefined)}
+        {view === 'history' ? (
+          <CallHistoryPage onBack={() => setView('dialer')} onSelect={handleHistorySelect} />
+        ) : view === 'conversations' ? (
+          <ConversationsPage
+            onBack={() => setView('dialer')}
+            onSelect={handleOpenSms}
+          />
+        ) : view === 'conversation' && smsNumber ? (
+          <Conversation
+            contactNumber={smsNumber}
+            onBack={() => setView('dialer')}
+            onCall={handleCallFromThread}
           />
         ) : (
-          <CallHistoryPage
-            onBack={() => setView('dialer')}
-            onSelect={handleHistorySelect}
+          <Dialer
+            onViewAll={() => setView('history')}
+            onViewAllMessages={() => setView('conversations')}
+            onOpenSms={handleOpenSms}
+            redialNumber={redialNumber}
+            onRedialConsumed={() => setRedialNumber(undefined)}
           />
         )}
       </div>
