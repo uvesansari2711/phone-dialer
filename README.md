@@ -1,12 +1,12 @@
 # Phone Dialer
 
-A mobile-first Twilio dialer application. Enter a phone number on a traditional keypad UI, place outbound calls through your browser using the Twilio Voice SDK, and view persistent call history.
+A mobile-first Twilio dialer application. Enter a phone number on a traditional keypad UI, place outbound calls through your browser using the Twilio Voice SDK, send and receive SMS, and view persistent call and message history.
 
 ## Tech Stack
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Twilio Voice SDK
 - **Backend:** Node.js, Express, TypeScript, Twilio Node SDK
-- **Database:** MongoDB (call history + webhook-driven status updates)
+- **Database:** MongoDB (call history, SMS threads, and webhook-driven status updates)
 
 ## Architecture
 
@@ -14,13 +14,13 @@ A mobile-first Twilio dialer application. Enter a phone number on a traditional 
 Browser (React + Voice SDK)
         │ REST API
         ▼
-Express Backend ──► Twilio ──► Destination Phone
+Express Backend ──► Twilio ──► Destination Phone / SMS
         │
         ▼
-     MongoDB ◄── Twilio status webhooks
+     MongoDB ◄── Twilio voice + SMS webhooks
 ```
 
-Twilio credentials never reach the frontend. The backend issues short-lived access tokens and serves TwiML/webhooks.
+Twilio credentials never reach the frontend. The backend issues short-lived access tokens, serves TwiML/webhooks, and sends SMS through the Twilio REST API.
 
 ## Prerequisites
 
@@ -28,6 +28,7 @@ Twilio credentials never reach the frontend. The backend issues short-lived acce
 - MongoDB (local, Docker, or [MongoDB Atlas](https://www.mongodb.com/atlas))
 - Twilio account with:
   - A Voice-enabled phone number
+  - SMS capability on any number you want to send/receive texts from
   - An API Key + Secret
   - A TwiML App
 
@@ -78,7 +79,7 @@ VITE_API_URL=http://localhost:5000
 
 1. **Get credentials** from the [Twilio Console](https://console.twilio.com):
    - Account SID and Auth Token
-   - Purchase or use an existing Voice-capable phone number
+   - Purchase or use an existing Voice-capable phone number (SMS-capable for messaging)
 
 2. **Create an API Key:**
    - Console → Account → API Keys → Create new key
@@ -100,6 +101,12 @@ VITE_API_URL=http://localhost:5000
    Set `PUBLIC_BASE_URL` in `server/.env` to the ngrok HTTPS URL (e.g. `https://abc123.ngrok.io`).
 
    Update the TwiML App Voice URL in Twilio Console to match.
+
+5. **Configure SMS webhooks** on each SMS-capable number:
+   - Console → Phone Numbers → Active Numbers → select the number
+   - Messaging → A message comes in: `{PUBLIC_BASE_URL}/api/twilio/sms`
+   - HTTP POST
+   - Status callbacks for outbound SMS are set automatically when sending (`/api/twilio/sms-status`)
 
 ## Running Locally
 
@@ -132,6 +139,13 @@ Open http://localhost:5173 on your phone or desktop browser.
 7. Tap **End** to hang up.
 8. The call appears in **Call History**.
 
+## Testing SMS
+
+1. Use an SMS-capable Twilio number and configure the inbound webhook as above.
+2. Enter a number on the keypad and tap the dark **Message** button.
+3. Type a message and tap send. Delivery status updates under the bubble (Sent / Delivered / Failed).
+4. Replies to your Twilio number appear in the same thread (the Dialer **Messages** tab shows unread threads). Opening a thread also syncs recent messages from the Twilio account, so SMS sent from another app (for example Heat Engineer) on the same number show up without waiting on the webhook.
+
 ## API Endpoints
 
 | Method | Route | Description |
@@ -143,8 +157,14 @@ Open http://localhost:5173 on your phone or desktop browser.
 | GET | `/api/calls` | List call history |
 | GET | `/api/calls/:callSid` | Get call by Twilio SID |
 | POST | `/api/calls/:callSid/end` | End active call |
+| POST | `/api/messages` | Send an SMS |
+| GET | `/api/messages?with=+E164` | Message thread with a number |
+| GET | `/api/conversations` | Conversation list with unread counts |
+| POST | `/api/conversations/:number/read` | Mark a thread as read |
 | POST | `/api/twilio/voice` | TwiML webhook (Twilio only) |
 | POST | `/api/twilio/status` | Status callback webhook |
+| POST | `/api/twilio/sms` | Inbound SMS webhook (Twilio only) |
+| POST | `/api/twilio/sms-status` | SMS status callback (Twilio only) |
 
 ## Running Tests
 
@@ -164,6 +184,8 @@ npm test
 | Error 20003 | Auth failure | Check Account SID and Auth Token |
 | Insufficient balance | Twilio account balance | Add funds in Twilio Console |
 | No call history updates | MongoDB not connected | Check `MONGODB_URI` and MongoDB is running |
+| SMS send fails / error 21612 | Number is not SMS-capable or destination cannot receive SMS | Use an SMS-enabled Twilio From number; confirm the destination is a mobile number |
+| Inbound SMS never appears | Messaging webhook not set, or another app owns the number | Set the number's Messaging URL to `{PUBLIC_BASE_URL}/api/twilio/sms`. The dialer also syncs Twilio's message log when you open Messages. Both apps must use the **same Twilio number** on the **same account**. |
 
 ## Project Structure
 

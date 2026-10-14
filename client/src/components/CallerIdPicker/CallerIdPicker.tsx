@@ -8,6 +8,8 @@ interface CallerIdPickerProps {
   loading: boolean;
   error?: string | null;
   onSelect: (phoneNumber: string) => void;
+  label?: string;
+  emptyMessage?: string;
 }
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -54,6 +56,8 @@ export function CallerIdPicker({
   loading,
   error,
   onSelect,
+  label = 'Calling from',
+  emptyMessage = 'No outbound numbers available',
 }: CallerIdPickerProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -114,7 +118,7 @@ export function CallerIdPicker({
   if (numbers.length === 0) {
     return (
       <div className={sectionClass}>
-        <p className="text-center text-xs text-dialer-textMuted">No outbound numbers available</p>
+        <p className="text-center text-xs text-dialer-textMuted">{emptyMessage}</p>
       </div>
     );
   }
@@ -124,7 +128,7 @@ export function CallerIdPicker({
     return (
       <div className={sectionClass}>
         <p className="mb-1.5 text-center text-[11px] font-medium uppercase tracking-wider text-dialer-textMuted">
-          Calling from
+          {label}
         </p>
         <div className="flex items-center justify-center rounded-2xl bg-dialer-key px-4 py-2">
           <span className="text-sm font-medium text-dialer-text">
@@ -138,7 +142,7 @@ export function CallerIdPicker({
   return (
     <div ref={containerRef} className={`relative ${sectionClass}`}>
       <p className="mb-1.5 text-center text-[11px] font-medium uppercase tracking-wider text-dialer-textMuted">
-        Calling from
+        {label}
       </p>
 
       <button
@@ -165,7 +169,7 @@ export function CallerIdPicker({
         >
           {numbers.map((number) => {
             const isSelected = number.phoneNumber === selectedCallerId;
-            const label = formatForDisplay(number.phoneNumber);
+            const displayLabel = formatForDisplay(number.phoneNumber);
 
             return (
               <li key={number.sid} role="option" aria-selected={isSelected}>
@@ -178,7 +182,7 @@ export function CallerIdPicker({
                       : 'text-dialer-textSecondary hover:bg-dialer-key'
                   }`}
                 >
-                  <span className="truncate">{label}</span>
+                  <span className="truncate">{displayLabel}</span>
                   {isSelected && <CheckIcon />}
                 </button>
               </li>

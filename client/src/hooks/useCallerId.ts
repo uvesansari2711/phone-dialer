@@ -3,11 +3,14 @@ import { api } from '../services/api';
 import type { OutgoingPhoneNumber } from '../types';
 import { pickDefaultCallerId, setStoredCallerId } from '../utils/callerIdStorage';
 
-export function useCallerId() {
+type NumberCapability = 'voice' | 'sms';
+
+export function useCallerId(capability?: NumberCapability) {
   const [numbers, setNumbers] = useState<OutgoingPhoneNumber[]>([]);
   const [selectedCallerId, setSelectedCallerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasSmsNumbers, setHasSmsNumbers] = useState(false);
 
   const loadNumbers = useCallback(async () => {
     setLoading(true);
@@ -15,21 +18,26 @@ export function useCallerId() {
 
     try {
       const { numbers: fetched, default: serverDefault } = await api.getPhoneNumbers();
-      setNumbers(fetched);
+      const filtered = capability
+        ? fetched.filter((number) => number.capabilities?.[capability])
+        : fetched;
+      setHasSmsNumbers(fetched.some((number) => number.capabilities?.sms));
+      setNumbers(filtered);
       setSelectedCallerId((current) => {
-        if (current && fetched.some((n) => n.phoneNumber === current)) {
+        if (current && filtered.some((n) => n.phoneNumber === current)) {
           return current;
         }
-        return pickDefaultCallerId(fetched, serverDefault);
+        return pickDefaultCallerId(filtered, serverDefault);
       });
     } catch {
       setError('Unable to load phone numbers.');
       setNumbers([]);
       setSelectedCallerId(null);
+      setHasSmsNumbers(false);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [capability]);
 
   useEffect(() => {
     loadNumbers();
@@ -48,5 +56,6 @@ export function useCallerId() {
     selectCallerId,
     reload: loadNumbers,
     hasNumbers: numbers.length > 0,
+    hasSmsNumbers,
   };
 }

@@ -1,27 +1,45 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { PhoneInput } from '../../components/PhoneInput';
 import { DialPad } from '../../components/DialPad';
 import { CallButton } from '../../components/CallButton';
+import { SmsButton } from '../../components/SmsButton';
 import { ActiveCall } from '../../components/ActiveCall';
 import { CallHistory } from '../../components/CallHistory';
+import { ConversationList } from '../../components/ConversationList';
 import { CallerIdPicker } from '../../components/CallerIdPicker';
 import { useCall } from '../../hooks/useCall';
 import { useCallerId } from '../../hooks/useCallerId';
+import { useConversations } from '../../hooks/useConversations';
 import { api } from '../../services/api';
 import { isValidPhoneNumber, normalizeToE164 } from '../../utils/phone';
 import type { CallRecord } from '../../types';
 
 interface DialerProps {
   onViewAll: () => void;
+  onViewAllMessages: () => void;
+  onOpenSms: (phoneNumber: string) => void;
   redialNumber?: string;
   onRedialConsumed?: () => void;
 }
 
-export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProps) {
+type HistoryTab = 'calls' | 'messages';
+
+const LONG_PRESS_MS = 500;
+
+export function Dialer({
+  onViewAll,
+  onViewAllMessages,
+  onOpenSms,
+  redialNumber,
+  onRedialConsumed,
+}: DialerProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [historyTab, setHistoryTab] = useState<HistoryTab>('calls');
+  const longPressTimer = useRef<number | undefined>(undefined);
+  const longPressFired = useRef(false);
 
   const refreshHistory = useCallback(async () => {
     try {
@@ -41,7 +59,10 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
     error: callerIdError,
     selectCallerId,
     hasNumbers,
-  } = useCallerId();
+    hasSmsNumbers,
+  } = useCallerId('voice');
+
+  const { conversations, loading: conversationsLoading, unreadTotal } = useConversations(true);
 
   const {
     callState,
@@ -67,13 +88,10 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
     }
   }, [redialNumber, onRedialConsumed]);
 
-  const handleKeyPress = useCallback(
-    (digit: string) => {
-      setPhoneNumber((prev) => prev + digit);
-      setValidationError(null);
-    },
-    [],
-  );
+  const handleKeyPress = useCallback((digit: string) => {
+    setPhoneNumber((prev) => prev + digit);
+    setValidationError(null);
+  }, []);
 
   const handleBackspace = useCallback(() => {
     setPhoneNumber((prev) => prev.slice(0, -1));
@@ -84,6 +102,31 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
     setPhoneNumber('');
     setValidationError(null);
   }, []);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current !== undefined) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = undefined;
+    }
+  }, []);
+
+  const handleBackspacePointerDown = useCallback(() => {
+    longPressFired.current = false;
+    clearLongPress();
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      handleClear();
+    }, LONG_PRESS_MS);
+  }, [clearLongPress, handleClear]);
+
+  const handleBackspacePointerUp = useCallback(() => {
+    clearLongPress();
+    if (!longPressFired.current) {
+      handleBackspace();
+    }
+  }, [clearLongPress, handleBackspace]);
+
+  useEffect(() => () => clearLongPress(), [clearLongPress]);
 
   const handleCall = useCallback(async () => {
     const e164 = normalizeToE164(phoneNumber);
@@ -98,6 +141,20 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
     await startCall(e164, selectedCallerId);
   }, [phoneNumber, selectedCallerId, startCall]);
 
+  const handleSms = useCallback(() => {
+    const e164 = normalizeToE164(phoneNumber);
+    if (!e164) {
+      setValidationError('Please enter a valid phone number.');
+      return;
+    }
+    if (!hasSmsNumbers) {
+      setValidationError('No SMS-capable numbers available.');
+      return;
+    }
+    setValidationError(null);
+    onOpenSms(e164);
+  }, [phoneNumber, hasSmsNumbers, onOpenSms]);
+
   const handleHistorySelect = useCallback((number: string) => {
     setPhoneNumber(number);
     setValidationError(null);
@@ -109,6 +166,7 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
 
   const isValid = isValidPhoneNumber(phoneNumber);
   const canCall = isValid && isReady && hasNumbers && !!selectedCallerId;
+  const canSms = isValid && hasSmsNumbers;
 
   if (isInCall || callState === 'ended' || callState === 'failed') {
     return (
@@ -135,15 +193,61 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
       </header>
 
       <div className="shrink-0 border-b border-dialer-border">
-        <CallHistory
-          calls={calls}
-          loading={historyLoading}
-          onSelect={handleHistorySelect}
-          limit={2}
-          onViewAll={onViewAll}
-          title="Call History"
-          compact
-        />
+        <div className="flex justify-center px-4 pt-2">
+          <div className="inline-flex rounded-full bg-dialer-key p-0.5" role="tablist" aria-label="History">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={historyTab === 'calls'}
+              onClick={() => setHistoryTab('calls')}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                historyTab === 'calls'
+                  ? 'bg-dialer-card text-dialer-text shadow-sm'
+                  : 'text-dialer-textSecondary hover:text-dialer-text'
+              }`}
+            >
+              Calls
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={historyTab === 'messages'}
+              onClick={() => setHistoryTab('messages')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                historyTab === 'messages'
+                  ? 'bg-dialer-card text-dialer-text shadow-sm'
+                  : 'text-dialer-textSecondary hover:text-dialer-text'
+              }`}
+            >
+              Messages
+              {unreadTotal > 0 && (
+                <span className="h-1.5 w-1.5 rounded-full bg-dialer-accent" aria-label={`${unreadTotal} unread`} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {historyTab === 'calls' ? (
+          <CallHistory
+            calls={calls}
+            loading={historyLoading}
+            onSelect={handleHistorySelect}
+            limit={2}
+            onViewAll={onViewAll}
+            title="Call History"
+            compact
+          />
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            loading={conversationsLoading}
+            onSelect={onOpenSms}
+            limit={2}
+            onViewAll={onViewAllMessages}
+            title="Messages"
+            compact
+          />
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col px-2 pb-2">
@@ -162,7 +266,10 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
             <div className="flex justify-start">
               <button
                 type="button"
-                onClick={handleBackspace}
+                onPointerDown={handleBackspacePointerDown}
+                onPointerUp={handleBackspacePointerUp}
+                onPointerLeave={clearLongPress}
+                onPointerCancel={clearLongPress}
                 disabled={!phoneNumber}
                 aria-label="Delete last digit"
                 className="flex h-11 w-11 items-center justify-center rounded-full text-dialer-textSecondary transition-colors hover:bg-dialer-key active:bg-dialer-keyHover disabled:opacity-30"
@@ -182,15 +289,7 @@ export function Dialer({ onViewAll, redialNumber, onRedialConsumed }: DialerProp
             </div>
 
             <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleClear}
-                disabled={!phoneNumber}
-                aria-label="Clear number"
-                className="flex h-11 min-w-[3rem] items-center justify-center text-sm font-medium text-dialer-textSecondary transition-colors hover:text-dialer-text active:text-dialer-text disabled:opacity-30"
-              >
-                Clear
-              </button>
+              <SmsButton onClick={handleSms} disabled={!canSms} />
             </div>
           </div>
         </div>

@@ -2,8 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   clearPhoneNumberCache,
   getDefaultCallerId,
+  getDefaultSmsFrom,
   getOutgoingPhoneNumbers,
   resolveCallerId,
+  resolveSmsFrom,
 } from '../services/phoneNumberService.js';
 import { ValidationError } from '../utils/errors.js';
 
@@ -37,5 +39,28 @@ describe('phoneNumberService', () => {
 
   it('rejects caller ID not on account', async () => {
     await expect(resolveCallerId('+19998887777')).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('includes capabilities on listed numbers', async () => {
+    const numbers = await getOutgoingPhoneNumbers();
+    expect(numbers[0].capabilities).toEqual({ voice: true, sms: true });
+  });
+
+  it('resolves default SMS from number', async () => {
+    const from = await getDefaultSmsFrom();
+    expect(from).toBe(TEST_PHONE_NUMBER);
+  });
+
+  it('resolves valid SMS from number', async () => {
+    const from = await resolveSmsFrom(TEST_PHONE_NUMBER);
+    expect(from).toBe(TEST_PHONE_NUMBER);
+  });
+
+  it('rejects SMS from a voice-only number', async () => {
+    await expect(resolveSmsFrom('+14155552672')).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('rejects SMS from a number not on account', async () => {
+    await expect(resolveSmsFrom('+19998887777')).rejects.toBeInstanceOf(ValidationError);
   });
 });

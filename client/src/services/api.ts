@@ -1,7 +1,9 @@
 import type {
   ApiError,
   CallRecord,
+  ConversationSummary,
   CreateCallResponse,
+  MessageRecord,
   PhoneNumbersResponse,
   TokenResponse,
 } from '../types';
@@ -107,6 +109,22 @@ export const api = {
 
   endCall: (callSid: string) =>
     request<CallRecord>(`/api/calls/${callSid}/end`, { method: 'POST' }),
+
+  sendSms: (to: string, from: string, body: string) =>
+    request<MessageRecord>('/api/messages', {
+      method: 'POST',
+      body: JSON.stringify({ to, from, body }),
+    }),
+
+  getMessages: (contactNumber: string) =>
+    request<MessageRecord[]>(`/api/messages?with=${encodeURIComponent(contactNumber)}`),
+
+  getConversations: () => request<ConversationSummary[]>('/api/conversations'),
+
+  markConversationRead: (contactNumber: string) =>
+    request<{ ok: boolean }>(`/api/conversations/${encodeURIComponent(contactNumber)}/read`, {
+      method: 'POST',
+    }),
 };
 
 export { ApiClientError };
