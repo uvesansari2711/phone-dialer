@@ -62,7 +62,8 @@ export function Dialer({
     hasSmsNumbers,
   } = useCallerId('voice');
 
-  const { conversations, loading: conversationsLoading, unreadTotal } = useConversations(true);
+  const { conversations, loading: conversationsLoading, unreadTotal, reload: reloadConversations } =
+    useConversations();
 
   const {
     callState,
@@ -79,6 +80,11 @@ export function Dialer({
   useEffect(() => {
     refreshHistory();
   }, [refreshHistory]);
+
+  useEffect(() => {
+    if (historyTab !== 'messages') return;
+    void reloadConversations();
+  }, [historyTab, reloadConversations]);
 
   useEffect(() => {
     if (redialNumber) {

@@ -116,8 +116,11 @@ export const api = {
       body: JSON.stringify({ to, from, body }),
     }),
 
-  getMessages: (contactNumber: string) =>
-    request<MessageRecord[]>(`/api/messages?with=${encodeURIComponent(contactNumber)}`),
+  getMessages: (contactNumber: string, options?: { sync?: boolean }) => {
+    const params = new URLSearchParams({ with: contactNumber });
+    if (options?.sync) params.set('sync', '1');
+    return request<MessageRecord[]>(`/api/messages?${params.toString()}`);
+  },
 
   getConversations: () => request<ConversationSummary[]>('/api/conversations'),
 

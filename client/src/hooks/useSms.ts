@@ -15,31 +15,38 @@ export function useSms({ contactNumber }: UseSmsOptions) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadMessages = useCallback(async () => {
-    if (!contactNumber) {
-      setMessages([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const data = await api.getMessages(contactNumber);
-      setMessages(data);
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError('Unable to load messages.');
+  const loadMessages = useCallback(
+    async (sync = false) => {
+      if (!contactNumber) {
+        setMessages([]);
+        setLoading(false);
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [contactNumber]);
+
+      try {
+        const data = await api.getMessages(contactNumber, { sync });
+        setMessages(data);
+      } catch (err) {
+        if (err instanceof ApiClientError) {
+          setError(err.message);
+        } else {
+          setError('Unable to load messages.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [contactNumber],
+  );
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    void loadMessages();
+    void loadMessages(true);
+  }, [loadMessages]);
+
+  const pollMessages = useCallback(() => {
+    void loadMessages(false);
   }, [loadMessages]);
 
   useEffect(() => {
@@ -49,7 +56,7 @@ export function useSms({ contactNumber }: UseSmsOptions) {
     });
   }, [contactNumber]);
 
-  useVisibilityPolling(loadMessages, THREAD_POLL_MS, Boolean(contactNumber));
+  useVisibilityPolling(pollMessages, THREAD_POLL_MS, Boolean(contactNumber));
 
   const send = useCallback(
     async (body: string, from: string) => {

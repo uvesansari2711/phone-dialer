@@ -47,13 +47,15 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
 export const getMessages = asyncHandler(async (req: Request, res: Response) => {
   const withNumber = typeof req.query.with === 'string' ? req.query.with : undefined;
   const contactNumber = parseContactNumber(withNumber, 'conversation');
-  await syncMessagesFromTwilio();
+  const shouldSync = req.query.sync === '1' || req.query.sync === 'true';
+  if (shouldSync) {
+    await syncMessagesFromTwilio();
+  }
   const messages = await listMessagesForContact(contactNumber);
   res.json(messages.map(serializeMessage));
 });
 
 export const getConversations = asyncHandler(async (_req: Request, res: Response) => {
-  await syncMessagesFromTwilio();
   const conversations = await listConversations();
   res.json(conversations);
 });
